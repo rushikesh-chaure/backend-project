@@ -7,7 +7,7 @@ const videoSchema = new mongoose.Schema(
             type: String,
             required: true,
             trim:true,
-            unique: true,
+            // unique: true,
         },
         thumbnail: {
             type: String,
@@ -31,7 +31,7 @@ const videoSchema = new mongoose.Schema(
         },
         duration: {
             type: Number,
-            required: true,
+            // required: true,
         },
         views: {
             type: Number,

@@ -23,11 +23,13 @@ app.get("/login",(req,res)=>{
 
 // route imports
 import userRouter from "./routes/user.route.js"
+import videoRouter from "./routes/video.route.js"
 
 
 
 // routes 
 app.use("/api/v1/user",userRouter);
+app.use("/api/v1/video",videoRouter);
 
 
 
