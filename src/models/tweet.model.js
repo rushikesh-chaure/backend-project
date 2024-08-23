@@ -4,10 +4,12 @@ const tweetSchema = new mongoose.Schema(
     {
         owner:{
             Type: mongoose.Schema.Types.ObjectID,
-            ref:"User"
+            ref:"User",
+            required:true
         },
         content:{
-            Type: String
+            Type: String,
+            required:true
         }
     },
     {

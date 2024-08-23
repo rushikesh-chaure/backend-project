@@ -22,8 +22,8 @@ app.get("/login",(req,res)=>{
 })
 
 // route imports
-import userRouter from "./routes/user.route.js"
-import videoRouter from "./routes/video.route.js"
+import userRouter from "./routes/user.routes.js"
+import videoRouter from "./routes/video.routes.js"
 
 
 

@@ -1,12 +1,11 @@
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
-import { Video } from "../models/video.model.js"
+// import { Video } from "../models/video.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
-// import { isPasswordCorrect } from "../models/user.model.js"
-
+// import mongoose from "mongoose"
 
 const generateAccessAndRefreshToken = async (user) => {
     try {
@@ -188,7 +187,7 @@ const logoutUser = asyncHandler( async (req,res) => {
 
     const user = await User.findById(req.user._id).select("-password")
 
-    user.refreshToken = undefined
+    user.refreshToken = null
 
     await user.save({validateBeforeSave:false})
 
@@ -247,7 +246,7 @@ const  refreshAccessToken = asyncHandler( async (req,res) => {
     )
 })
 
-const changePassword = asyncHandler(async (req,res) => {
+const updatePassword = asyncHandler(async (req,res) => {
 
     const {newPassword,oldPassword} = req.body
     // console.log(newPassword)
@@ -271,7 +270,7 @@ const changePassword = asyncHandler(async (req,res) => {
     res
     .status(200)
     .json(
-        new ApiResponse(201,{},"Password changed...!")
+        new ApiResponse(201,{},"Password updated...!")
     )
 }) 
 
@@ -280,30 +279,20 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         throw new ApiError(401,"Unauthorized access...!")
     }
 
-    const user = User.findById(req.user?._id).select("-password -refreshToken")
+    const newUser = await User.findById(req.user?._id).select("-password -refreshToken")
+
+    if(!newUser){
+        throw new ApiError(401,"Unauthorized access...!")
+    }
 
     res
     .status(201)
     .json(
-        new ApiResponse(201,{user})
+        new ApiResponse(201,{newUser})
     )
 })
 
-const getUserPrfile = asyncHandler(async (req, res) => {
-    const {username} = req.params
-
-    if(!username?.trim()){
-        throw new ApiError(401,"User not found...!")
-    }
-
-    const user = await User.findById(username).select("-password")
-
-    const subscriberCount = await User.aggregate([
-        
-    ])
-})
-
-const changeAvatar = asyncHandler(async (req,res) => {
+const updateAvatar = asyncHandler(async (req,res) => {
 
     const user = await User.findById(req.user._id).select("-password")
 
@@ -312,8 +301,9 @@ const changeAvatar = asyncHandler(async (req,res) => {
     }
 
     let avatarLocalPath;
-    if(req.files && req.files.avatar[0] && req.files.avatar[0].path){
-        avatarLocalPath = req.files.avatar[0].path
+    // console.log(req.files)
+    if(req.files && req.files.avatarImage[0] && req.files.avatarImage[0].path){
+        avatarLocalPath = req.files.avatarImage[0].path
     }else{
         throw new ApiError(401,"Avatar image NOT found...!")
     }
@@ -345,7 +335,7 @@ const changeAvatar = asyncHandler(async (req,res) => {
 
 })
 
-const changeCoverImage = asyncHandler(async (req,res) => {
+const updateCoverImage = asyncHandler(async (req,res) => {
 
     const user = await User.findById(req.user._id).select("-password")
 
@@ -387,85 +377,32 @@ const changeCoverImage = asyncHandler(async (req,res) => {
 
 })
 
-const uploadVideo = asyncHandler(async (req, res) => {
 
-    const { description, title } = req.body
-    
-    if(!description || description.trim()==""){
-        throw new ApiError(401,"description is required...!")
-    }
-    if(!title || title.trim()==""){
-        throw new ApiError(401,"title is required...!")
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    const {username} = req.params
+
+    if(!username?.trim()){
+        throw new ApiError(401,"User not found...!")
     }
 
-    if(!req.user){
-        throw new ApiError(401,"Unauthorized Access...!")
-    }
+    const user = await User.findById(username).select("-password")
 
-    const user = await User.findById(req.user._id).select("-password -refreshToken")
-    
-    if(!user){
-        throw new ApiError(401,"Invalid User access...!")
-    }
-
-    let videoLocalPath;
-    if(req.files && req.files.video[0] && req.files.video[0].path){
-        videoLocalPath = req.files.video[0].path
-    }else{
-        throw new ApiError(401,"Video NOT found...!")
-    }
-
-    let thumbnailLocalPath;
-    if(req.files && req.files.thumbnail[0] && req.files.thumbnail[0].path){
-        thumbnailLocalPath = req.files.thumbnail[0].path
-    }else{
-        throw new ApiError(401,"thumbnail NOT found...!")
-    }
-
-    const video = await uploadOnCloudinary(videoLocalPath)
-    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
-
-    if(!video?.url){
-        throw new ApiError(500,"Failed to upload video on cloudinary...!")
-    }
-    if(!thumbnail?.url){
-        throw new ApiError(500,"Failed to upload on thumbnail cloudinary...!")
-    }
-
-    const videoObject = await Video.create({
-        videoFile: video.url,
-        thumbnail: thumbnail.url,
-        title: title.trim(),
-        owner: user._id,
-        description: description.trim()
-    })
-
-    if(!videoObject){
-        throw new ApiError(500,"Failed to create an Object in DB...!")
-    }
-
-    const UploadedVideo = await Video.findById(videoObject._id)
-
-    if(!videoObject){
-        throw new ApiError(500,"Failed to create an Object in DB...!")
-    }
-
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(201,{UploadedVideo},"Video uploaded successfully...!")
-    )
-
+    const subscriberCount = await User.aggregate([
+        
+    ])
 })
 
 export { 
     registerUser, 
     loginUser, 
     logoutUser, 
+    // deleteUser,
     refreshAccessToken,
-    changePassword,
+    updatePassword,
     getCurrentUser,
-    uploadVideo,
-    changeAvatar,
-    changeCoverImage
+    updateAvatar,
+    updateCoverImage
+//     getUserChannelProfile,
+//     getWatchHistory
+//     updateAccountDetails,
 }
