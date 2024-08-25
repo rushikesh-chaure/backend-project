@@ -1,16 +1,16 @@
 // import mongoose from "mongoose"
 import mongoose from "mongoose"
-import { Tweet } from "../models/tweet.model"
-import { User } from "../models/user.model"
-import { ApiError } from "../utils/ApiError"
-import { asyncHandler } from "../utils/asyncHandler"
-import { ApiResponse } from "../utils/ApiResponse"
+import { Tweet } from "../models/tweet.model.js"
+import { User } from "../models/user.model.js"
+import { ApiError } from "../utils/ApiError.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
 
 
 const createTweet = asyncHandler(async (req, res) => {
-    const {content} = req.body
+    const { content } = req.body
     if(!content || content.trim()===""){
-        throw new Error(401,"Add some content...!")
+        throw new ApiError(401,"Add some content...!")
     }
 
     const user = await User.findById(req.user._id).select("-password -refreshToken")
@@ -35,9 +35,9 @@ const createTweet = asyncHandler(async (req, res) => {
 })
 
 const getUserTweets = asyncHandler(async (req, res) => {
-    const {userId} = req.params
+    const { username } = req.params
 
-    const user = await User.findById(userId).select("-password -refreshToken")
+    const user = await User.findOne({userName:username}).select("-password -refreshToken")
 
     if(!user){
         throw new ApiError(401,"User not found...!")
@@ -46,7 +46,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
     const data = await User.aggregate([
         {
             $match:{
-                _id:mongoose.Types.ObjectId(user._id)
+                _id:new mongoose.Types.ObjectId(user._id)
             }
         },
         {
@@ -59,7 +59,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
         },
         {
             $project:{
-                "$tweets":1
+                tweets:1
             }
         }
     ])
@@ -104,7 +104,7 @@ const updateTweet = asyncHandler(async (req, res) => {
 })
 
 const deleteTweet = asyncHandler(async (req, res) => {
-    const { tweetId } = req.body
+    const { tweetId } = req.params
     if(!tweetId || tweetId.trim()===""){
         throw new ApiError(401,"Required tweet ID...!")
     }

@@ -127,7 +127,7 @@ const loginUser = asyncHandler( async (req,res) => {
     // generate cookies 
     // send them 
 
-    const {password,userName,email} = req.body
+    const { password, userName, email } = req.body
     // console.log(req.body)
 
     if(!(userName || email)){
@@ -323,7 +323,7 @@ const updateAvatar = asyncHandler(async (req,res) => {
     */
     user.avatar = avatar.url
 
-    user.save({validateBeforeSave: false})
+    await user.save({validateBeforeSave: false})
 
     const newUser = await User.findById(user._id).select("-password -refreshToken")
 
@@ -365,7 +365,7 @@ const updateCoverImage = asyncHandler(async (req,res) => {
     */
     user.coverImage = coverImage.url
 
-    user.save({validateBeforeSave: false})
+    await user.save({validateBeforeSave: false})
 
     const newUser = await User.findById(user._id).select("-password -refreshToken")
 
@@ -374,23 +374,22 @@ const updateCoverImage = asyncHandler(async (req,res) => {
     .json(
         new ApiResponse(201,{newUser},"coverImage updated successfully...!")
     )
-
 })
 
 
-const getUserChannelProfile = asyncHandler(async (req, res) => {
-    const {username} = req.params
+// const getUserChannelProfile = asyncHandler(async (req, res) => {
+//     const {username} = req.params
 
-    if(!username?.trim()){
-        throw new ApiError(401,"User not found...!")
-    }
+//     if(!username?.trim()){
+//         throw new ApiError(401,"User not found...!")
+//     }
 
-    const user = await User.findById(username).select("-password")
+//     const user = await User.findById(username).select("-password")
 
-    const subscriberCount = await User.aggregate([
+//     const subscriberCount = await User.aggregate([
         
-    ])
-})
+//     ])
+// })
 
 export { 
     registerUser, 

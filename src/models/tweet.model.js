@@ -1,14 +1,14 @@
-import mongoose, { Types } from "mongoose";
+import mongoose from "mongoose";
 
 const tweetSchema = new mongoose.Schema(
     {
         owner:{
-            Type: mongoose.Schema.Types.ObjectID,
+            type: mongoose.Schema.Types.ObjectID,
             ref:"User",
             required:true
         },
         content:{
-            Type: String,
+            type: String,
             required:true
         }
     },

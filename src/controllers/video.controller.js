@@ -1,12 +1,11 @@
 import {Video} from "../models/video.model.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
-// import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { User } from "../models/user.model.js"
 import mongoose from "mongoose"
-// import mongoose from "mongoose"
+
 
 const uploadVideo = asyncHandler(async (req, res) => {
 
@@ -80,15 +79,15 @@ const uploadVideo = asyncHandler(async (req, res) => {
 })
 
 const getVideoById = asyncHandler(async (req,res) => {
-    const {videoId} = req.params
-
+    const { videoId } = req.params
+    // console.log(videoId)
     const video = await Video.findById(videoId)
 
     if(!video){
-        throw new ApiError(404,"Can't Found video...!")
+        throw new ApiError(404,"Video not found...!")
     }
     if(!video.isPublished){
-        throw new ApiError(404,"Can't Found video...!")
+        throw new ApiError(404,"Video not found...!")
     }
 
     return res
@@ -99,9 +98,9 @@ const getVideoById = asyncHandler(async (req,res) => {
 })
 
 const getAllVideos = asyncHandler(async (req,res) => {
-    const { userName } = req.body
+    const userName = req.params.username
     
-    if(!userName || userName?.trim().length()<1){
+    if(!userName || !userName.trim()){
         throw new ApiError(401,"User name required...!")
     }
 
@@ -114,7 +113,7 @@ const getAllVideos = asyncHandler(async (req,res) => {
     const data = await User.aggregate([
         {
             $match:{
-                _id:mongoose.Types.ObjectId(user._id)
+                _id:new mongoose.Types.ObjectId(user._id)
             }
         },
         {
@@ -144,8 +143,8 @@ const getAllVideos = asyncHandler(async (req,res) => {
 })
 
 const updateVideo = asyncHandler(async (req,res) => {
-    const {videoId} = req.params
-    const {isThumbNail,title,description} = req.body
+    const { videoId } = req.params
+    const { isThumbNail, title, description } = req.body
 
     let thumbNail;
     if(isThumbNail){
@@ -170,7 +169,7 @@ const updateVideo = asyncHandler(async (req,res) => {
     video.title = title?.trim() || video.title
     video.description = description?.trim() || video.description
 
-    video.save({validateBeforeSave:false})
+    await video.save({validateBeforeSave:false})
 
     return res.status(201).json(
         new ApiResponse(200, {},"Video details updated...!") 
@@ -178,15 +177,14 @@ const updateVideo = asyncHandler(async (req,res) => {
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.body
+    const { videoId } = req.params
 
-    if(!videoId || videoId.trim().length()<1){
+    if(!videoId || !videoId.trim()){
         throw new ApiError(401,"Video ID required...!")
     }
 
-    
-
-    if(await Video.findById(videoId)){
+    const video = await Video.findById(videoId)
+    if(video){
         await Video.findByIdAndDelete(videoId)
         return new ApiResponse(201,{},"Video deleted successfully...")
     }
@@ -195,7 +193,12 @@ const deleteVideo = asyncHandler(async (req, res) => {
 })
 
 const togglePublishStatus = asyncHandler(async (req,res) => {
-    const {videoId} = req.params
+
+    const { videoId } = req.params
+
+    if(!videoId){
+        throw new ApiError(401,"Video ID required...!")
+    }
 
     const video = await Video.findById(videoId)
 
@@ -203,22 +206,18 @@ const togglePublishStatus = asyncHandler(async (req,res) => {
         throw new ApiError(401,"Video Not Found...!")
     }
 
-    if(req.user._id!=video.owner){
+    if(!video.owner.equals(req.user._id)){
         throw new ApiError(401,"Unauthorized Access...!")
     }
 
     video.isPublished = !video.isPublished
 
-    video.save({validateBeforeSave:false})
+    await video.save({validateBeforeSave:false})
 
-    return res
-    .status(200)
-    .json(
+    return res.status(200).json(
         new ApiResponse(200,{},"Toggled publish status...!")
     )
 })
-
-
 
 
 export {
