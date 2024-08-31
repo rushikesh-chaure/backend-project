@@ -1,18 +1,18 @@
 import mongoose from "mongoose"
-import { Playlist } from "../models/playlist.model"
-import { ApiError } from "../utils/ApiError"
-import { asyncHandler } from "../utils/asyncHandler"
-import { ApiResponse } from "../utils/ApiResponse"
-import { User } from "../models/user.model"
-import { Video } from "../models/video.model"
+import { Playlist } from "../models/playlist.model.js"
+import { ApiError } from "../utils/ApiError.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+import { User } from "../models/user.model.js"
+import { Video } from "../models/video.model.js"
 
 
 
 const createPlaylist = asyncHandler(async (req, res) => {
     const {name, description} = req.body
 
-    if(!name || name?.trim().length()==0){
-        throw new ApiError(401,"Can't get playlist name...!")
+    if(!name || name.trim()==""){
+        throw new ApiError(401,"Playlist name required...!")
     }
 
     if(!req.user){
@@ -34,14 +34,17 @@ const createPlaylist = asyncHandler(async (req, res) => {
 }) 
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
-    if(!req.user){
-        throw new ApiError(401,"User not found...!")
+    
+    const { username } = req.params
+    if(!username){
+        throw new ApiError(401,"Username required...!")
     }
+    const user = await User.findOne({ userName:username })
 
     const data = await User.aggregate([
         {
             $match:{
-                _id:mongoose.Types.ObjectId(req.user._id)
+                _id: new mongoose.Types.ObjectId(user._id)
             }
         },
         {
@@ -54,7 +57,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         },
         {
             $project:{
-                playlist: 1
+                playlists: 1
             }
         }
     ])
@@ -66,7 +69,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 })
 
 const getPlaylistById = asyncHandler(async (req, res) => {
-    const {playlistId} = req.body
+    const {playlistId} = req.params
 
     const playlist = await Playlist.findById(playlistId)
 
@@ -88,7 +91,6 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 
     const playlist = await Playlist.findById(playlistId)
     const video = await Video.findById(videoId)
-    
 
     if(!playlist){
         throw new ApiError(401,"Cannot find Playlist...!")
@@ -97,9 +99,15 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(401,"Cannot find video...!")
     }
 
+    const user = await User.findById(req.user._id).select("-password -refreshToken")
+
+    if(!user._id.equals(playlist.owner) || !user._id.equals(video.owner)){
+        throw new ApiError(401,"Unauthorized access...!")
+    }
+    
     playlist.videos.push(video._id);
 
-    playlist.save({validateBeforeSave: false})
+    await playlist.save({validateBeforeSave: false})
 
     return res
     .status(200)
@@ -127,9 +135,15 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(401,"Cannot find video...!")
     }
 
-    playlist.videos = playlist.videos.filter(id => id !== videoId)
+    const user = await User.findById(req.user._id).select("-password -refreshToken")
 
-    playlist.save({validateBeforeSave: false})
+    if(!user._id.equals(playlist.owner)){
+        throw new ApiError(401,"Unauthorized access...!")
+    }
+
+    playlist.videos = playlist.videos.filter(id => !id.equals(videoId))
+
+    await playlist.save({validateBeforeSave: false})
 
     return res
     .status(200)
@@ -139,9 +153,12 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
 })
 
 const updatePlaylist = asyncHandler(async (req, res) => {
-    const { name, description, playlistId } = req.body
+    const { playlistId } = req.params
+    const { name, description } = req.body
 
-    if(!playlist?.trim()){
+    const user = await User.findById(req.user._id).select("-password -refreshToken")
+
+    if(!playlistId?.trim()){
         throw new ApiError(401,"Playlist ID not found...!")
     }
     const playlist = await Playlist.findById(playlistId)
@@ -150,10 +167,14 @@ const updatePlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(401,"Playlist not found...!")
     }
 
+    if(!user._id.equals(playlist.owner)){
+        throw new ApiError(401,"Unauthorized access...!")
+    }
+
     playlist.name = name?.trim() || playlist.name
     playlist.description = description?.trim() || playlist.description
 
-    playlist.save({validateBeforeSave:false})
+    await playlist.save({validateBeforeSave:false})
 
     return res
     .status(201)
@@ -163,7 +184,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
 })
 
 const deletePlaylist = asyncHandler(async (req, res) => {
-    const { playlistId } = req.body
+    const { playlistId } = req.params
 
     if(!playlistId){
         throw new ApiError(401,"Playlist ID not found...!")

@@ -1,13 +1,13 @@
 import mongoose from "mongoose"
-import { User } from "../models/user.model"
-import { asyncHandler } from "../utils/asyncHandler"
-import { ApiError } from "../utils/ApiError"
-import { ApiResponse } from "../utils/ApiResponse"
-import { Subscription } from "../models/subscription.model"
+import { User } from "../models/user.model.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+import { Subscription } from "../models/subscription.model.js"
 
 
 const toggleSubscription = asyncHandler(async (req, res) => {
-    const {channel} = req.params
+    const { channel } = req.params
     const user = await User.findById(req.user._id).select("-password -refreshToken")
     const channelUser = await User.findOne({userName:channel}).select("-password -refreshToken")
 
@@ -47,7 +47,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     const data = await User.aggregate([
         {
             $match:{
-                _id:mongoose.Types.ObjectId(req.user._id)
+                _id: new mongoose.Types.ObjectId(req.user._id)
             }
         },
         {
@@ -81,7 +81,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     const data = await User.aggregate([
         {
             $match:{
-                _id:mongoose.Types.ObjectId(req.user._id)
+                _id: new mongoose.Types.ObjectId(req.user._id)
             }
         },
         {

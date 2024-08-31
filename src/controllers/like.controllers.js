@@ -6,29 +6,26 @@ import { ApiResponse } from "../utils/ApiResponse.js"
 import { Comment } from "../models/comment.model.js"
 import { Tweet } from "../models/tweet.model.js"
 import { Video } from "../models/video.model.js"
+import mongoose from "mongoose"
 
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
     const user = req.user
     const { commentId } = req.params
 
-    if(!user || !user?._id){
-        throw new ApiError(401,"Unauthorized access...!")
-    }
-
-    if(!commentId || commentId?.trim().length()<1){
+    if(!commentId || commentId.trim()==""){
         throw new ApiError(401,"Comment ID required...!")
     }
     if(!await Comment.findById(commentId)){
         throw new ApiError(401,"Comment not found...!")
     }
 
-    const like = await Like.find({owenr:user._id,comment:commentId})
+    const like = await Like.findOne({owner:user._id,comment:commentId})
 
     if(!like){
         const newLike = await Like.create({
-            owenr:user._id,
-            comment:commentId.trim()
+            owner:user._id,
+            comment:commentId
         })
 
         if(!newLike){
@@ -37,9 +34,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
         return res.status(201).json(new ApiResponse(201,{},"Comment like added...!"))
     }
 
-    if(!await Like.findByIdAndDelete(like._id)){
-        throw new ApiError(501,"Something went wrong while deleting like...!")
-    }
+    await Like.findByIdAndDelete(like._id)
 
     return res.status(200).json(new ApiResponse(201,{},"Comment like removed...!"))
 })
@@ -48,23 +43,19 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     const user = req.user
     const { tweetId } = req.params
 
-    if(!user || !user?._id){
-        throw new ApiError(401,"Unauthorized access...!")
-    }
-
-    if(!tweetId || tweetId?.trim().length()<1){
+    if(!tweetId || tweetId.trim()==""){
         throw new ApiError(401,"tweet ID required...!")
     }
     if(!await Tweet.findById(tweetId)){
         throw new ApiError(401,"Tweet not found...!")
     }
 
-    const like = await Like.find({owenr:user._id,tweet:tweetId})
+    const like = await Like.findOne({owner:user._id,tweet:tweetId})
 
     if(!like){
         const newLike = await Like.create({
-            owenr:user._id,
-            tweet:tweetId.trim()
+            owner:user._id,
+            tweet:tweetId
         })
 
         if(!newLike){
@@ -73,9 +64,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
         return res.status(201).json(new ApiResponse(201,{},"tweet like added...!"))
     }
 
-    if(!await Like.findByIdAndDelete(like._id)){
-        throw new ApiError(501,"Something went wrong while deleting like...!")
-    }
+    await Like.findByIdAndDelete(like._id)
 
     return res.status(200).json(new ApiResponse(201,{},"Tweet like removed...!"))
 })
@@ -84,23 +73,19 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     const user = req.user
     const { videoId } = req.params
 
-    if(!user || !user?._id){
-        throw new ApiError(401,"Unauthorized access...!")
-    }
-
-    if(!videoId || videoId?.trim().length()<1){
+    if(!videoId || videoId.trim()==""){
         throw new ApiError(401,"Video ID required...!")
     }
     if(!await Video.findById(videoId)){
         throw new ApiError(401,"Video not found...!")
     }
 
-    const like = await Like.find({owenr:user._id,video:videoId})
+    const like = await Like.findOne({owner:user._id,video:videoId})
 
     if(!like){
         const newLike = await Like.create({
-            owenr:user._id,
-            video:videoId.trim()
+            owner:user._id,
+            video:videoId
         })
 
         if(!newLike){
@@ -109,9 +94,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
         return res.status(201).json(new ApiResponse(201,{},"video like added...!"))
     }
 
-    if(!await Like.findByIdAndDelete(like._id)){
-        throw new ApiError(501,"Something went wrong while deleting like...!")
-    }
+    await Like.findByIdAndDelete(like._id)
 
     return res.status(200).json(new ApiResponse(201,{},"Video like removed...!"))
 })
@@ -127,11 +110,12 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     const likes = await Like.aggregate([
         {
             $match:{
-                owner:user._id,
+                owner:new mongoose.Types.ObjectId(user._id),
                 video:{$ne : null}
             }
         }
     ])
+    return res.status(201).json(new ApiResponse(201,{likes},"Liked videros sent successfully...!"))
 })
 
 export {
